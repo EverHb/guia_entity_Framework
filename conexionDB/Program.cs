@@ -2,82 +2,112 @@
 using System;
 using System.Linq;
 
-
-class Program
+class conexionDB 
 {
     static void Main()
     {
-
-        while (true)
+        using (var context = new Context())
         {
-            using (var context = new Context())
+            context.Database.EnsureCreated();
+
+            while (true)
             {
-                Console.WriteLine("\nListado de Estudiantes:");
+                Console.WriteLine("1. Mostrar | 2. Actualizar | 3. Eliminar | 4. Salir");
+                var opcion = Console.ReadLine();
 
-                using (var contextdb = new Context())
+                switch (opcion)
                 {
-                    contextdb.Database.EnsureCreated();
-
-                    var estudiante = new Student() { Id = 04, Nombre = "Pepito", Apellidos = "Pérez", Sexo = "Masculino", Edad = 20 };
-                    contextdb.Add(estudiante);
-                    contextdb.SaveChanges();
-
-                    foreach (var s in context.Estudiante.ToList())
-                    {
-                        Console.WriteLine($"ID: {s.Id}, Nombre: {s.Nombre} {s.Apellidos}, Edad: {s.Edad}, Sexo: {s.Sexo}");
-                    }
-                }
-
-                Console.WriteLine("\nIngrese los datos de los nuevos estudiantes:");
-
-                Console.Write("Id: ");
-                if (int.TryParse(Console.ReadLine(), out int id)) 
-
-                    Console.Write("Nombre: ");
-                var nombre = Console.ReadLine();
-
-                Console.Write("Apellido: ");
-                var apellido = Console.ReadLine();
-
-                Console.Write("Sexo: ");
-                var sexo = Console.ReadLine();
-
-                Console.Write("Edad: ");
-                if (int.TryParse(Console.ReadLine(), out int edad))
-                {
-                    var nuevoEstudiante = new Student
-                    {
-                        Id = id,
-                        Nombre = nombre,
-                        Apellidos = apellido,
-                        Sexo = sexo,
-                        Edad = edad
-                    };
-
-                    try
-                    {
-                        context.Estudiante.Add(nuevoEstudiante);
-                        context.SaveChanges();
-                        Console.WriteLine("Estudiante se agrego correctamente.");
-                    }
-                    catch (DbUpdateException ex)
-                    {
-                        Console.WriteLine("Error al agregar estudiante. Asegúrate de que los datos sean válidos.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Edad no válida. Intente nuevamente.");
-                }
-
-                Console.Write("¿Si desea agregar más estudiantes, presione (S) y si ya no desea ingresar, presione (N): ");
-                var respuesta = Console.ReadLine();
-                if (respuesta?.Trim().ToLower() != "s")
-                {
-                    break;
+                    case "1":
+                        Mostrar(context);
+                        break;
+                    case "2":
+                        Actualizar(context);
+                        break;
+                    case "3":
+                        Eliminar(context);
+                        break;
+                    case "4":
+                        return;
+                    default:
+                        Console.WriteLine("Opción no válida.");
+                        break;
                 }
             }
         }
     }
+
+    static void Mostrar(Context ctx)
+    {
+        ctx.Estudiante.ToList().ForEach(s => Console.WriteLine($"ID: {s.Id}, Nombre: {s.Nombre} {s.Apellidos}, Edad: {s.Edad}, Sexo: {s.Sexo}"));
+    }
+
+    static void Actualizar(Context ctx)
+    {
+        int id = LeerInt("ID del estudiante a actualizar: ");
+        var estudiante = ctx.Estudiante.FirstOrDefault(e => e.Id == id);
+
+        if (estudiante != null)
+        {
+            Console.WriteLine("¿Qué atributo desea modificar? (NOMBRE, APELLIDO, SEXO, EDAD)");
+            var atributo = Console.ReadLine().ToUpper();
+
+            switch (atributo)
+            {
+                case "NOMBRE":
+                    estudiante.Nombre = LeerString("Nuevo nombre: ");
+                    break;
+                case "APELLIDO":
+                    estudiante.Apellidos = LeerString("Nuevo apellido: ");
+                    break;
+                case "SEXO":
+                    estudiante.Sexo = LeerString("Nuevo sexo: ");
+                    break;
+                case "EDAD":
+                    estudiante.Edad = LeerInt("Nueva edad: ");
+                    break;
+                default:
+                    Console.WriteLine("Atributo no válido.");
+                    return;
+            }
+
+            ctx.SaveChanges();
+            Console.WriteLine("Estudiante actualizado correctamente.");
+        }
+        else
+        {
+            Console.WriteLine("Estudiante no encontrado.");
+        }
+    }
+
+    static void Eliminar(Context ctx)
+    {
+        int id = LeerInt("ID del estudiante a eliminar: ");
+        var estudiante = ctx.Estudiante.SingleOrDefault(e => e.Id == id);
+
+        if (estudiante != null)
+        {
+            ctx.Estudiante.Remove(estudiante);
+            ctx.SaveChanges();
+            Console.WriteLine("Estudiante eliminado correctamente.");
+        }
+        else
+        {
+            Console.WriteLine("Estudiante no encontrado.");
+        }
+    }
+
+    static int LeerInt(string mensaje)
+    {
+        Console.Write(mensaje);
+        return int.TryParse(Console.ReadLine(), out int result) ? result : 0;
+    }
+
+    static string LeerString(string mensaje)
+    {
+        Console.Write(mensaje);
+        return Console.ReadLine();
+    }
 }
+
+
 
